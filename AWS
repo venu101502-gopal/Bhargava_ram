@@ -1,0 +1,172 @@
+
+IANA: 
+Internet Assigned Numbers Authority
+
+NAT: 
+
+Network Address Translation
+
+IPV4 Range : 0.0.0.0 to 255.255.255.255
+Class A
+1.0.0.1 to 126.255.255.254 -> Public IPs
+Private or Non-Routable - 10.0.0.0 to 10.255.255.255
+Class B
+128.1.0.1 to 191.255.255.254 -> Public IPs
+Private or Non-Routable - 172.16.0.0 to 172.31.255.255
+Class C
+192.0.1.1 to 223.255.254.254 -> IPs
+Private or Non-Routable - 192.168.0.0 to 192.168.255.255
+127.0.0.1
+169.254.169.254
+Network Address Traslation (NAT)
+#################################################################
+
+1. Subnetting
+2. AWS VPC Arch
+3. Implement VPC in AWS.
+1. 10.0.0.0 to 10.255.255.255
+2. 172.16.0.0 to 172.31.255.255
+3. 192.168.0.0 to 192.168.255.255
+Network -> 10.1.0.0 - 32-bit address
+255.255.0.0 MASK/NETMASK/SUBNETMASK
+
+000 - 1
+001 - 2
+010 - 4
+011 - 8
+100 - 16
+101 - 32
+110 - 64
+111 - 128 
+
+==> 10.0-255.0-255.0-255/8 1.6 mil IP Address
+	255.0.0.0
+
+	* [AWS will not support for subnet 8 ]
+
+==> 10.0.0-255.0-255/16 65000
+ 	255.255.0.0
+
+==> 10.0.0.0/24 - 255
+	255.255.255.0
+
+########################################
+10.1.1.0 -> NW ID
+10.1.1.255 -›BCAST ID
+10.1.1.1,2,3 -> AWS Internal Use
+10.1.1.4 to 10.1.1.254
+10.1.0.0/16 -> 65000
+WebServers = 16 - > 10.1.1.0/24
+10.1.1.1 - 10.1.1.30 -> 10.1.1.0/27
+AppServers = 10 -› 10.1.2.0/24
+10.1.1.33 - 10.1.1.46 -> 10.1.1.32/28
+DbServers = 40 -> 10.1.3.0/24
+10.1.1.32/28
+
+#########################################
+10.1.1.0-255/24 -> 255
+255. 255. 255.0
+10.1.1.1 - 10.1.1.62 /26 -> 62IP
+10.1.1.65 - 10.1.1.126 /26 -> 62IP
+10.1.1.129 - 10.1.1.190 /26 - > 62IP
+10.1.1.193 - 10.1.1.254 /26 -> 621P
+10.1.0.0/16 - Supernet
+172.16.0.0/16
+192.168.0.0/16
+
+#########################################
+
+===> Create a VPC 
+
+Go to VPC and create VPC name as venu_vpc
+
+10.80.0.1/16
+
+===> Create subnets: 
+
+10.80.1.0/24 ---> Webservers --> 1A
+10.80.2.0/24 ---> Appservers --> 1B
+10.80.3.0/24 ---> DBservers --> 1C
+
+Create a subnet --> Select a vpc --> Webserevrs --> Select a AZ as us-east-1a --> 10.80.1.0/24 --> Create a subnet.
+                --> Select a vpc --> Appservers --> Select a AZ as us-east-1b --> 10.80.2.0/24 --> Create a subnet.
+                --> Select a vpc --> DBservers  --> Select a AZ as us-east-1c --> 10.80.3.0/24 --> Create a subnet.
+
+===> Search a subnets with VPC 
+
+
+===> Create a Ineternet Gatway: 
+
+Goto Internet Gateway --> Create a Internet Gateway --> Give a name as venu-IGW --> Create
+
+==> Next step is attach to VPC 
+
+Goto Internet Gateway --> Select a IGW --> Select a  Attach to VPC option  --> Select VPC --> Attach Inetrnet Gatway.
+
+Then go to internet gateway and see if it is attached or not? 
+
+===> Route table :
+
+Goto route table --> create a route tables --> Give a name as venu-main-route --> Select a vpc --> create.
+
+* Attache subnets to routing table --> Subnet associations --> Edit subnet --> Select subnets --> save.
+* Edit route --> Add route --> 0.0.0.0/0 --> Select internet gateway in local dropdown --> Save routes.
+
+===> Create Security groups 
+ Goto Security groups --> Give a name as Allow_All --> select a vpc --> inbound_rules --> 0.0.0.0/0 --> save [Don't give like this in real time]
+
+ ===> create a key pairs 
+
+ Goto key pairs section --> create a key pair --> Give a name as venu-keypair --> Select a file formate .pem or .ppk --> create keypair.
+
+  ===> Deploye a EC2 machine.
+
+  =============================================================================
+
+  ===> VPC peering:
+
+VPC Peering:
+1. No IP Address Overlapping
+2. VPC Peering Dont Support Transit
+
+  * Launch two EC2 machines with different VPC and keypairs in N.virgnia 
+  
+
+===> Copy the keypair from diffrent region:
+
+  Login one machine in N.virgnia and type a command as # ec2-metadata it will give the keypair and copy the keypair --> Goto ohio --> Goto keypair section --> import keys --> paste the keypair --> Give a name as venu-import-key --> import 
+
+  * Launch a EC2 machine in ohio with imported keypair.
+
+  * Test the comminication with two machines first in N.virgnia.
+
+  ping 192.168.1.100 
+  ping 10.80.1.100 
+
+  Goto ohio and connect the machine and # ping 172.16.1.100
+
+
+  ===> First we need to peering with same region vpc's like Green and Red 
+
+  Goto peering --> create a peering  --> Give a name as green_to_Red --> Requester is Green_VPC -->  VPC Accepter is RED_VPC --> Create peering connection --> Select a peering connection --> Actions --> Accept Request --> yes Accept.
+
+
+  Take the RED_VPC ID and Goto routes --> search it --> Routes --> edit routes --> Add route --> 10.80.0.0/16 --> select peering --> Save routes 
+  Take the GREEN_VPC ID and Goto routes --> search it --> Routes --> edit routes --> Add route --> 192.168.0.0/16 --> select peering --> Save routes 
+
+  Now it will connection is established.
+
+
+  ===> VPC_peering betwwen  Region to region.
+
+
+Goto peering --> create a peering  --> Give a name as green_to_BLUE --> Requester is Green_VPC --> Select another Region --> Select region --> Give a BLUE VPC ID in VPC Accepter  --> Create peering connection --> Select a peering connection --> Actions --> Accept Request --> yes Accept.
+
+
+You can't accept the accept the peering where you're created peering, You want to accept the peering then goto ohio --> peerings --> Give a name as like Green_to_BLUE --> Goto actions --> Accept Request --> Yes Accept.
+
+ Goto routes --> Select BLUE_VPC --> edit routes --> 10.80.0.0/16 --> Select peering GREEN_to_BLUE --> Save.
+ Goto routes --> Select GREEN_VPC --> edit routes --> 172.16.0.0/16 --> Select peering  GREEN_to_BLUE --> Save. 
+
+ Now it is pinging.
+ 
