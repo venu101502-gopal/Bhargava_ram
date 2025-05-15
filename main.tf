@@ -3,11 +3,11 @@ provider "aws" {
 }
 
 resource "aws_instance" "venugopal" {
-  ami                    = "ami-0c3b809fcf2445b6a"
+  ami                    = "ami-0f9de6e2d2f067fca"
   instance_type          = "t2.micro"
-  key_name               = "Green-key"  # Do NOT include .pem
-  subnet_id              = "subnet-05cb25e88f2a11974"
-  vpc_security_group_ids = ["sg-08356a5952adffadd"]
+  key_name               = "Blue-key"  # Do NOT include .pem
+  subnet_id              = "subnet-0d1fa72421efd7af5"
+  vpc_security_group_ids = ["sg-054788bd6d2edbc82"]
   associate_public_ip_address = true
 
   root_block_device {
