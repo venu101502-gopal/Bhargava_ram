@@ -38,15 +38,15 @@ pipeline {
             }
         }
 
-        stage('Terraform Apply') {
-            steps {
-                input message: 'Approve Terraform apply?', ok: 'Apply'
-                dir("${TF_WORKING_DIR}") {
-                    sh 'terraform apply -input=false tfplan'
-                }
-            }
+       stage('Terraform Apply') {
+    steps {
+        input message: 'Approve Terraform apply?', ok: 'Apply'
+        dir("${TF_WORKING_DIR}") {
+            sh 'terraform apply -input=false -auto-approve tfplan'
         }
     }
+}
+
 
     post {
         always {
