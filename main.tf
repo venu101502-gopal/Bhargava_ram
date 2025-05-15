@@ -6,7 +6,7 @@ resource "aws_instance" "foo" {
   ami                         = "ami-0f9de6e2d2f067fca"
   instance_type               = "t2.micro"
   key_name                    = "Blue-key"  # Ensure this key exists in us-east-2
-  subnet_id                   = "subnet-0d1fa72421efd7af5"
+  subnet_id                   = "subnet-0987dcdded8589a51"
   vpc_security_group_ids      = ["sg-054788bd6d2edbc82"]
   associate_public_ip_address = true
 
