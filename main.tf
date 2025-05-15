@@ -2,10 +2,10 @@ provider "aws" {
   region = "us-east-2"
 }
 
-resource "aws_instance" "foo" {
+resource "aws_instance" "venugopal" {
   ami                         = "ami-0f9de6e2d2f067fca"
   instance_type               = "t2.micro"
-  key_name                    = "Blue-key"  # Ensure this key exists in us-east-2
+  key_name                    = "Blue-key"
   subnet_id                   = "subnet-0987dcdded8589a51"
   vpc_security_group_ids      = ["sg-054788bd6d2edbc82"]
   associate_public_ip_address = true
@@ -56,13 +56,13 @@ resource "aws_instance" "foo" {
 }
 
 output "venugopal_public_ip" {
-  value = aws_instance.foo.public_ip
+  value = aws_instance.venugopal.public_ip
 }
 
 output "venugopal_private_ip" {
-  value = aws_instance.foo.private_ip
+  value = aws_instance.venugopal.private_ip
 }
 
 output "venugopal_key_name" {
-  value = aws_instance.foo.key_name
+  value = aws_instance.venugopal.key_name
 }
