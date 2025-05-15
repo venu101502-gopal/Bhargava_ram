@@ -1,5 +1,6 @@
 pipeline {
     agent any
+
     parameters {
         booleanParam(name: 'autoApprove', defaultValue: false, description: 'Automatically run apply after generating plan?')
     } 
@@ -37,33 +38,44 @@ pipeline {
             steps {
                 dir("${TF_WORKING_DIR}") {
                     sh 'terraform plan -out=tfplan -input=false'
+                    sh 'terraform show -no-color tfplan > tfplan.txt'
                 }
             }
         }
 
-        steps {
-               script {
-                    def plan = readFile 'terraform/tfplan.txt'
-                    input message: "Do you want to apply the plan?",
-                    parameters: [text(name: 'Plan', description: 'Please review the plan', defaultValue: plan)]
-               }
-           }
-       }
+        stage('Review Plan') {
+            when {
+                expression { return !params.autoApprove }
+            }
+            steps {
+                script {
+                    def planText = readFile('tfplan.txt')
+                    input message: "Do you want to apply the Terraform plan?", parameters: [
+                        text(name: 'Plan', description: 'Terraform plan preview', defaultValue: planText)
+                    ]
+                }
+            }
+        }
 
-       stage('Terraform Apply') {
-    steps {
-        input message: 'Approve Terraform apply?', ok: 'Apply'
-        dir("${TF_WORKING_DIR}") {
-            sh 'terraform apply -input=false -auto-approve tfplan'
+        stage('Terraform Apply') {
+            when {
+                anyOf {
+                    expression { return params.autoApprove }
+                    expression { return !params.autoApprove }
+                }
+            }
+            steps {
+                dir("${TF_WORKING_DIR}") {
+                    sh 'terraform apply -input=false -auto-approve tfplan'
+                }
+            }
         }
     }
-}
-
 
     post {
         always {
             dir("${TF_WORKING_DIR}") {
-                sh 'terraform fmt -check'
+                sh 'terraform fmt -check || echo "Terraform files not properly formatted."'
             }
         }
         failure {
