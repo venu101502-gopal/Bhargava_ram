@@ -2,7 +2,7 @@ provider "aws" {
   region = "us-east-1"
 }
 
-# Create a new VPC
+# Create a VPC
 resource "aws_vpc" "my_vpc" {
   cidr_block           = "10.0.0.0/16"
   enable_dns_support   = true
@@ -13,11 +13,14 @@ resource "aws_vpc" "my_vpc" {
   }
 }
 
-# Create a public subnet in the VPC
+# Get availability zones dynamically
+data "aws_availability_zones" "available" {}
+
+# Create a subnet in the first AZ dynamically
 resource "aws_subnet" "my_subnet" {
   vpc_id                  = aws_vpc.my_vpc.id
   cidr_block              = "10.0.1.0/24"
-  availability_zone       = "us-east-2a"
+  availability_zone       = data.aws_availability_zones.available.names[0]
   map_public_ip_on_launch = true
 
   tags = {
@@ -25,7 +28,7 @@ resource "aws_subnet" "my_subnet" {
   }
 }
 
-# Internet Gateway for the VPC (to allow internet access)
+# Create an internet gateway for the VPC
 resource "aws_internet_gateway" "my_igw" {
   vpc_id = aws_vpc.my_vpc.id
 
@@ -34,7 +37,7 @@ resource "aws_internet_gateway" "my_igw" {
   }
 }
 
-# Route table with default route to IGW
+# Create a route table associated with the VPC
 resource "aws_route_table" "my_route_table" {
   vpc_id = aws_vpc.my_vpc.id
 
@@ -48,22 +51,30 @@ resource "aws_route_table" "my_route_table" {
   }
 }
 
-# Associate route table with subnet
-resource "aws_route_table_association" "my_route_table_assoc" {
+# Associate subnet with route table
+resource "aws_route_table_association" "a" {
   subnet_id      = aws_subnet.my_subnet.id
   route_table_id = aws_route_table.my_route_table.id
 }
 
-# Security Group allowing SSH and all outbound traffic
+# Create a security group that allows SSH and HTTP inbound
 resource "aws_security_group" "my_sg" {
-  name        = "my_security_group"
-  description = "Allow SSH and all outbound traffic"
+  name        = "my_sg"
+  description = "Allow SSH and HTTP"
   vpc_id      = aws_vpc.my_vpc.id
 
   ingress {
     description      = "SSH"
     from_port        = 22
     to_port          = 22
+    protocol         = "tcp"
+    cidr_blocks      = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    description      = "HTTP"
+    from_port        = 80
+    to_port          = 80
     protocol         = "tcp"
     cidr_blocks      = ["0.0.0.0/0"]
   }
@@ -76,20 +87,15 @@ resource "aws_security_group" "my_sg" {
   }
 
   tags = {
-    Name = "my_security_group"
+    Name = "my_sg"
   }
 }
 
-# Get latest Amazon Linux 2 AMI in the region
-data "aws_ssm_parameter" "amazon_linux_2_ami" {
-  name = "/aws/service/ami-amazon-linux-latest/amzn2-ami-hvm-x86_64-ebs"
-}
-
-# EC2 Instance with additional EBS volumes and user data
+# Create an EC2 instance
 resource "aws_instance" "venugopal" {
-  ami                    = data.aws_ssm_parameter.amazon_linux_2_ami.value
+  ami                    = "ami-0c02fb55956c7d316" # Amazon Linux 2 AMI in us-east-1 (update if needed)
   instance_type          = "t2.micro"
-  key_name               = "Blue-key"   # Ensure this key pair exists in us-east-2
+  key_name               = "Blue-key" # Replace with your keypair name in us-east-1
   subnet_id              = aws_subnet.my_subnet.id
   vpc_security_group_ids = [aws_security_group.my_sg.id]
   associate_public_ip_address = true
