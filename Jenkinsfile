@@ -1,55 +1,64 @@
 pipeline {
-    parameters {
-        booleanParam(name: 'autoApprove', defaultValue: false, description: 'Automatically run apply after generating plan?')
-    }
+    agent any
 
     environment {
         AWS_ACCESS_KEY_ID     = credentials('AWS_ACCESS_KEY_ID')
         AWS_SECRET_ACCESS_KEY = credentials('AWS_SECRET_ACCESS_KEY')
+        TF_WORKING_DIR        = '.'
     }
-
-    agent any
 
     stages {
         stage('Checkout') {
             steps {
-                git 'https://github.com/venu101502-gopal/Bhargava_ram.git'
+                checkout scm
             }
         }
 
-        stage('Terraform Init & Plan') {
+        stage('Terraform Init') {
             steps {
-                dir('terraform') {
+                dir("${TF_WORKING_DIR}") {
                     sh 'terraform init'
-                    sh 'terraform plan -out=tfplan'
-                    sh 'terraform show -no-color tfplan > tfplan.txt'
                 }
             }
         }
 
-        stage('Approval') {
-            when {
-                not {
-                    equals expected: true, actual: params.autoApprove
+        stage('Terraform Validate') {
+            steps {
+                dir("${TF_WORKING_DIR}") {
+                    sh 'terraform validate'
                 }
             }
+        }
+
+        stage('Terraform Plan') {
             steps {
-                script {
-                    def plan = readFile('terraform/tfplan.txt')
-                    input message: "Do you want to apply the plan?",
-                        parameters: [
-                            text(name: 'Plan', description: 'Please review the plan below:', defaultValue: plan)
-                        ]
+                dir("${TF_WORKING_DIR}") {
+                    sh 'terraform plan -out=tfplan -input=false'
                 }
             }
         }
 
         stage('Terraform Apply') {
             steps {
-                dir('terraform') {
+                input message: 'Approve Terraform apply?', ok: 'Apply'
+                dir("${TF_WORKING_DIR}") {
                     sh 'terraform apply -input=false tfplan'
                 }
             }
+        }
+    }
+
+    post {
+        always {
+            dir("${TF_WORKING_DIR}") {
+                sh 'terraform fmt -check'
+            }
+        }
+        failure {
+            echo 'Pipeline failed.'
+        }
+        success {
+            echo 'Terraform apply completed successfully!'
         }
     }
 }
