@@ -1,13 +1,25 @@
-provider "aws" {
-  region = "us-east-2"
+# Get default VPC
+data "aws_vpc" "default" {
+  default = true
+}
+
+# Get default subnet (first one)
+data "aws_subnet_ids" "default" {
+  vpc_id = data.aws_vpc.default.id
+}
+
+# Get default security group
+data "aws_security_group" "default" {
+  name   = "default"
+  vpc_id = data.aws_vpc.default.id
 }
 
 resource "aws_instance" "venugopal" {
-  ami                         = "ami-0f9de6e2d2f067fca"
-  instance_type               = "t2.micro"
-  key_name                    = "Blue-key"
-  subnet_id                   = "subnet-0987dcdded8589a51"
-  vpc_security_group_ids      = ["sg-054788bd6d2edbc82"]
+  ami                    = "ami-0f9de6e2d2f067fca" # Replace with a valid, public AMI if needed
+  instance_type          = "t2.micro"
+  key_name               = "Blue-key" # Make sure this key exists in us-east-2
+  subnet_id              = data.aws_subnet_ids.default.ids[0]
+  vpc_security_group_ids = [data.aws_security_group.default.id]
   associate_public_ip_address = true
 
   root_block_device {
@@ -53,16 +65,4 @@ resource "aws_instance" "venugopal" {
   tags = {
     Name = "Bhrgava_Ram"
   }
-}
-
-output "venugopal_public_ip" {
-  value = aws_instance.venugopal.public_ip
-}
-
-output "venugopal_private_ip" {
-  value = aws_instance.venugopal.private_ip
-}
-
-output "venugopal_key_name" {
-  value = aws_instance.venugopal.key_name
 }
